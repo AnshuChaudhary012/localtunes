@@ -35,11 +35,9 @@ class App {
       this.queueDrawer.open();
     });
 
-    this.miniPlayer = new MiniPlayer(
-      playerContainer,
-      () => this.fullPlayer.open(),
-      () => this.queueDrawer.open()
-    );
+    this.miniPlayer = new MiniPlayer(playerContainer, () => {
+      this.fullPlayer.open();
+    });
 
     this.navigation = new Navigation({
       onNavigate: (route) => this.navigate(route),

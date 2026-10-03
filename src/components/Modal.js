@@ -20,17 +20,17 @@ class ModalManager {
       : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-glow';
 
     overlay.innerHTML = `
-      <div class="relative w-full max-w-md max-h-[90vh] flex flex-col p-5 sm:p-6 bg-dark-card border border-dark-border rounded-2xl shadow-2xl transform scale-95 transition-transform duration-200">
+      <div class="relative w-full max-w-md p-6 bg-dark-card border border-dark-border rounded-2xl shadow-2xl transform scale-95 transition-transform duration-200">
         <!-- Header -->
-        <div class="flex items-center justify-between pb-3 sm:pb-4 border-b border-white/5 flex-shrink-0">
-          <h3 class="text-base sm:text-lg font-semibold text-white tracking-wide">${escapeHtml(title)}</h3>
+        <div class="flex items-center justify-between pb-4 border-b border-white/5">
+          <h3 class="text-lg font-semibold text-white tracking-wide">${escapeHtml(title)}</h3>
           <button class="modal-close text-slate-400 hover:text-white p-1 rounded-lg transition-colors" aria-label="Close modal">
             ${icons.x('w-5 h-5')}
           </button>
         </div>
 
         <!-- Body -->
-        <div class="modal-content my-3 sm:my-4 text-slate-300 text-sm overflow-y-auto flex-1 pr-1">
+        <div class="modal-content my-4 text-slate-300 text-sm">
           ${contentHtml}
         </div>
 

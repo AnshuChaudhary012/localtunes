@@ -213,7 +213,7 @@ function openRenamePlaylistModal(playlist, onDone) {
     contentHtml: `
       <div class="space-y-3">
         <label class="block text-xs font-medium text-slate-300">Playlist Name</label>
-        <input type="text" id="rename-playlist-input" value="${escapeHtml(playlist.name)}" class="w-full px-3.5 py-2.5 bg-dark-bg border border-dark-border rounded-xl text-white text-base sm:text-sm focus:outline-none focus:border-cyan-500" />
+        <input type="text" id="rename-playlist-input" value="${escapeHtml(playlist.name)}" class="w-full px-3.5 py-2.5 bg-dark-bg border border-dark-border rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500" />
       </div>
     `,
     confirmText: 'Save',

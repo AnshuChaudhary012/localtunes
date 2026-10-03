@@ -8,7 +8,6 @@ import { modal } from './Modal.js';
 import { toast } from './Toast.js';
 
 let activeMenuDropdown = null;
-let activeMenuBackdrop = null;
 
 // Close dropdown when clicking outside
 document.addEventListener('click', (e) => {
@@ -21,10 +20,6 @@ function closeActiveMenu() {
   if (activeMenuDropdown) {
     activeMenuDropdown.remove();
     activeMenuDropdown = null;
-  }
-  if (activeMenuBackdrop) {
-    activeMenuBackdrop.remove();
-    activeMenuBackdrop = null;
   }
 }
 
@@ -158,32 +153,16 @@ async function openTrackMenu(e, track, options = {}) {
   const isFav = await isFavorite(track.id);
   const triggerRect = e.currentTarget.getBoundingClientRect();
 
-  // Backdrop overlay to guarantee outside clicks close menu on mobile & desktop
-  const backdrop = document.createElement('div');
-  backdrop.className = 'fixed inset-0 z-40 bg-black/25 backdrop-blur-[1px] transition-opacity';
-  backdrop.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    closeActiveMenu();
-  });
-  document.body.appendChild(backdrop);
-  activeMenuBackdrop = backdrop;
-
   const dropdown = document.createElement('div');
   dropdown.className = 'fixed z-50 w-52 py-1.5 rounded-xl glass-dropdown shadow-glass text-sm text-slate-200 animate-fadeIn';
 
-  // Calculate position strictly within viewport bounds
-  const menuWidth = 208;
-  const menuHeight = options.playlistId ? 280 : 240;
-
+  // Calculate position (keep inside screen bounds)
   let top = triggerRect.bottom + 6;
-  let left = triggerRect.right - menuWidth;
-
-  if (top + menuHeight > window.innerHeight - 10) {
-    top = triggerRect.top - menuHeight - 6;
+  let left = triggerRect.right - 208; // 208px is w-52
+  if (left < 10) left = 10;
+  if (top + 280 > window.innerHeight) {
+    top = triggerRect.top - 260;
   }
-
-  top = Math.max(10, Math.min(top, window.innerHeight - menuHeight - 10));
-  left = Math.max(10, Math.min(left, window.innerWidth - menuWidth - 10));
 
   dropdown.style.top = `${top}px`;
   dropdown.style.left = `${left}px`;

@@ -20,15 +20,11 @@ export class AudioVisualizer {
     if (!this.canvas) return;
     const rect = this.canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    const w = rect.width > 0 ? rect.width : (this.width || 300);
-    const h = rect.height > 0 ? rect.height : (this.height || 40);
-
-    this.canvas.width = Math.floor(w * dpr);
-    this.canvas.height = Math.floor(h * dpr);
-    this.ctx = this.canvas.getContext('2d');
+    this.canvas.width = (rect.width || 300) * dpr;
+    this.canvas.height = (rect.height || 64) * dpr;
     this.ctx.scale(dpr, dpr);
-    this.width = w;
-    this.height = h;
+    this.width = rect.width || 300;
+    this.height = rect.height || 64;
   }
 
   start() {
