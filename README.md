@@ -5,8 +5,6 @@
 **Live App**: [https://localtunes-gamma.vercel.app](https://localtunes-gamma.vercel.app)  
 **GitHub Repository**: [https://github.com/AnshuChaudhary012/localtunes](https://github.com/AnshuChaudhary012/localtunes)
 
-![LocalTunes Banner](public/favicon/phone.png){width=100}
-
 ---
 
 ## 🌟 Overview
