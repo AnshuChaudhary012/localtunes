@@ -2,7 +2,7 @@
 
 > A complete, production-quality, client-side web music player for your local audio files. Built with vanilla JavaScript, Tailwind CSS, Vite, HTML5 Audio, and IndexedDB. 100% offline, privacy-first, zero backend, and installable as a Progressive Web App (PWA).
 
-**Live App**: [https://localtunes-gamma.vercel.app](https://localtunes-gamma.vercel.app)  
+**Live App**         : [https://localtunes-gamma.vercel.app](https://localtunes-gamma.vercel.app)  
 **GitHub Repository**: [https://github.com/AnshuChaudhary012/localtunes](https://github.com/AnshuChaudhary012/localtunes)
 
 ---
