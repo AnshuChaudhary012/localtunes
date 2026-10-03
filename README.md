@@ -5,7 +5,7 @@
 **Live App**: [https://localtunes-gamma.vercel.app](https://localtunes-gamma.vercel.app)  
 **GitHub Repository**: [https://github.com/AnshuChaudhary012/localtunes](https://github.com/AnshuChaudhary012/localtunes)
 
-![LocalTunes Banner](public/icons/icon-512.png)
+![LocalTunes Banner](public/favicon/phone.png)
 
 ---
 
@@ -319,4 +319,4 @@ localtunes/
 
 ## 📄 License
 
-MIT License. Crafted for music lovers who cherish private, local playback.
+© 2026 Anshu. All rights reserved. Crafted for music lovers who cherish private, local playback.
