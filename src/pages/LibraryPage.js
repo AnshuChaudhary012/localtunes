@@ -77,15 +77,15 @@ export async function renderLibraryPage(container, { onNavigate, onAddMusic, ini
         </div>
 
         <!-- Segmented Tab Navigation -->
-        <div class="flex items-center justify-between border-b border-dark-border pb-3">
-          <div class="flex items-center gap-2 p-1 rounded-xl bg-dark-card/80 border border-dark-border">
-            <button class="lib-tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'songs' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'}" data-tab="songs">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-dark-border pb-3">
+          <div class="flex items-center gap-1.5 sm:gap-2 p-1 rounded-xl bg-dark-card/80 border border-dark-border overflow-x-auto max-w-full">
+            <button class="lib-tab-btn px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${activeTab === 'songs' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'}" data-tab="songs">
               Songs (${allTracks.length})
             </button>
-            <button class="lib-tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'albums' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'}" data-tab="albums">
+            <button class="lib-tab-btn px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${activeTab === 'albums' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'}" data-tab="albums">
               Albums (${albumsList.length})
             </button>
-            <button class="lib-tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'artists' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'}" data-tab="artists">
+            <button class="lib-tab-btn px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${activeTab === 'artists' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-white'}" data-tab="artists">
               Artists (${artistsList.length})
             </button>
           </div>

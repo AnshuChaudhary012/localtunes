@@ -25,7 +25,7 @@ export async function renderSearchPage(container, { onNavigate }) {
             id="search-input"
             placeholder="Search songs, artists, or albums..."
             autofocus
-            class="w-full pl-12 pr-10 py-3.5 bg-dark-card border border-dark-border rounded-2xl text-white placeholder-slate-500 text-sm sm:text-base focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 shadow-glass transition-all"
+            class="w-full pl-12 pr-10 py-3 sm:py-3.5 bg-dark-card border border-dark-border rounded-2xl text-white placeholder-slate-500 text-base focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 shadow-glass transition-all"
           />
           <button id="search-clear-btn" class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white" aria-label="Clear search">
             ${icons.x('w-5 h-5')}

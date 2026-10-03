@@ -124,7 +124,7 @@ export class QueueDrawer {
                         <div class="text-[11px] text-slate-400 truncate">${escapeHtml(t.artist || 'Unknown Artist')}</div>
                       </div>
                       <span class="text-[11px] font-mono text-slate-500 group-hover:text-slate-400">${formatDuration(t.duration)}</span>
-                      <button class="queue-remove-btn opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-400 transition-opacity" data-remove-index="${actualQueueIndex}" aria-label="Remove from queue">
+                      <button class="queue-remove-btn opacity-80 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-400 transition-opacity rounded-lg" data-remove-index="${actualQueueIndex}" aria-label="Remove from queue">
                         ${icons.trash('w-4 h-4')}
                       </button>
                     </div>

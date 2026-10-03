@@ -142,11 +142,11 @@ function openCreatePlaylistModal(onCreated) {
       <div class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1.5">Playlist Name</label>
-          <input type="text" id="new-pl-name" placeholder="e.g. Chill Vibes, Workout Mix" class="w-full px-3.5 py-2.5 bg-dark-bg border border-dark-border rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500" />
+          <input type="text" id="new-pl-name" placeholder="e.g. Chill Vibes, Workout Mix" class="w-full px-3.5 py-2.5 bg-dark-bg border border-dark-border rounded-xl text-white text-base sm:text-sm focus:outline-none focus:border-cyan-500" />
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1.5">Description (Optional)</label>
-          <textarea id="new-pl-desc" rows="2" placeholder="What is this playlist about?" class="w-full px-3.5 py-2.5 bg-dark-bg border border-dark-border rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500"></textarea>
+          <textarea id="new-pl-desc" rows="2" placeholder="What is this playlist about?" class="w-full px-3.5 py-2.5 bg-dark-bg border border-dark-border rounded-xl text-white text-base sm:text-sm focus:outline-none focus:border-cyan-500"></textarea>
         </div>
       </div>
     `,
