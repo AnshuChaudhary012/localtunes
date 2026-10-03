@@ -3,6 +3,7 @@ import { player } from '../services/player.js';
 import { icons } from '../utils/icons.js';
 import { getArtworkSrc } from '../utils/artworkGenerator.js';
 import { isFavorite, toggleFavorite } from '../services/musicStorage.js';
+import { settingsService } from '../services/settingsService.js';
 
 export class MiniPlayer {
   constructor(container, onOpenFullPlayer) {
@@ -36,10 +37,11 @@ export class MiniPlayer {
 
     const isPlaying = player.isPlaying;
     const artworkSrc = getArtworkSrc(track);
+    const showProgressBar = settingsService.get('showMiniProgressBar');
 
     this.element.innerHTML = `
       <!-- Slim Top Progress Indicator Line -->
-      <div class="w-full h-1 bg-white/10 relative overflow-hidden cursor-pointer" id="mini-progress-track">
+      <div class="w-full h-1 bg-white/10 relative overflow-hidden cursor-pointer ${showProgressBar ? '' : 'hidden'}" id="mini-progress-track">
         <div id="mini-progress-fill" class="h-full bg-gradient-to-r from-cyan-400 to-purple-500 w-0 transition-all duration-100"></div>
       </div>
 
@@ -144,6 +146,19 @@ export class MiniPlayer {
     player.on('timeUpdate', ({ percent }) => {
       if (this.progressBar) {
         this.progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+      }
+    });
+
+    settingsService.on('change', ({ key, value }) => {
+      if (key === 'showMiniProgressBar') {
+        const trackBar = this.element.querySelector('#mini-progress-track');
+        if (trackBar) {
+          if (value) {
+            trackBar.classList.remove('hidden');
+          } else {
+            trackBar.classList.add('hidden');
+          }
+        }
       }
     });
   }

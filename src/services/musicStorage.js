@@ -108,6 +108,16 @@ export async function getFavoriteTracks() {
   return allTracks.filter(track => favSet.has(track.id));
 }
 
+export async function clearAllFavorites() {
+  const favRecords = await getAllFromStore('favorites');
+  for (const fav of favRecords) {
+    if (fav.trackId) {
+      await deleteFromStore('favorites', fav.trackId);
+    }
+  }
+  return true;
+}
+
 // Playlists Management
 export async function getPlaylists() {
   const playlists = await getAllFromStore('playlists');
@@ -198,6 +208,13 @@ export async function recordTrackPlayed(trackId) {
 
   state.recentlyPlayed = recent;
   await saveAppState(state);
+}
+
+export async function clearRecentlyPlayed() {
+  const state = await loadAppState();
+  state.recentlyPlayed = [];
+  await saveAppState(state);
+  return true;
 }
 
 export async function getRecentlyPlayed(limit = 12) {

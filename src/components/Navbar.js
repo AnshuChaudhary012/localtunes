@@ -96,6 +96,10 @@ export class Navigation {
                 ${icons.search('w-5 h-5')}
                 <span>Search</span>
               </button>
+              <button class="nav-item w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all" data-route="settings">
+                ${icons.settings('w-5 h-5')}
+                <span>Settings</span>
+              </button>
             </nav>
           </div>
 
@@ -142,25 +146,25 @@ export class Navigation {
     if (this.mobileNavEl) {
       this.mobileNavEl.innerHTML = `
         <div class="flex items-center justify-around px-2 py-2">
-          <button class="mobile-nav-item flex flex-col items-center gap-1 py-1 px-3 text-xs font-medium transition-colors" data-route="home">
+          <button class="mobile-nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-xs font-medium transition-colors" data-route="home">
             ${icons.home('w-5 h-5')}
             <span>Home</span>
           </button>
-          <button class="mobile-nav-item flex flex-col items-center gap-1 py-1 px-3 text-xs font-medium transition-colors" data-route="library">
+          <button class="mobile-nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-xs font-medium transition-colors" data-route="library">
             ${icons.library('w-5 h-5')}
             <span>Library</span>
           </button>
-          <button class="mobile-nav-item flex flex-col items-center gap-1 py-1 px-3 text-xs font-medium transition-colors" data-route="search">
+          <button class="mobile-nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-xs font-medium transition-colors" data-route="search">
             ${icons.search('w-5 h-5')}
             <span>Search</span>
           </button>
-          <button class="mobile-nav-item flex flex-col items-center gap-1 py-1 px-3 text-xs font-medium transition-colors" data-route="favorites">
+          <button class="mobile-nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-xs font-medium transition-colors" data-route="favorites">
             ${icons.heart('w-5 h-5')}
             <span>Favorites</span>
           </button>
-          <button class="mobile-nav-item flex flex-col items-center gap-1 py-1 px-3 text-xs font-medium transition-colors" data-route="playlists">
-            ${icons.playlists('w-5 h-5')}
-            <span>Playlists</span>
+          <button class="mobile-nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-xs font-medium transition-colors" data-route="settings">
+            ${icons.settings('w-5 h-5')}
+            <span>Settings</span>
           </button>
         </div>
       `;
@@ -182,7 +186,7 @@ export class Navigation {
       this.sidebarEl.querySelectorAll('.nav-item').forEach(btn => {
         const route = btn.dataset.route;
         if (route === this.currentRoute) {
-          btn.className = 'nav-item w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 shadow-sm';
+          btn.className = 'nav-item w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all bg-[var(--color-accent-badge-bg)] text-[var(--color-accent-primary)] border border-[var(--color-accent-badge-border)] shadow-sm';
         } else {
           btn.className = 'nav-item w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5 border border-transparent';
         }
@@ -194,9 +198,9 @@ export class Navigation {
       this.mobileNavEl.querySelectorAll('.mobile-nav-item').forEach(btn => {
         const route = btn.dataset.route;
         if (route === this.currentRoute) {
-          btn.className = 'mobile-nav-item flex flex-col items-center gap-1 py-1 px-3 text-xs font-semibold text-cyan-400 transition-colors';
+          btn.className = 'mobile-nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-xs font-semibold text-[var(--color-accent-primary)] transition-colors';
         } else {
-          btn.className = 'mobile-nav-item flex flex-col items-center gap-1 py-1 px-3 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors';
+          btn.className = 'mobile-nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors';
         }
       });
     }

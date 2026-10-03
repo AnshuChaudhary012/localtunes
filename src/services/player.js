@@ -1,12 +1,13 @@
 // LocalTunes Core Audio Player Service
 import { recordTrackPlayed, saveAppState, loadAppState, getTrackById } from './musicStorage.js';
 import { getArtworkSrc, getMediaSessionArtwork } from '../utils/artworkGenerator.js';
+import { settingsService } from './settingsService.js';
 
 class PlayerService {
   constructor() {
     this.audio = this.initAudioElement();
 
-    // State
+    // State synced with Settings
     this.currentTrack = null;
     this.isPlaying = false;
     this.duration = 0;
@@ -14,8 +15,8 @@ class PlayerService {
     this.volume = 0.8;
     this.isMuted = false;
     this.previousVolume = 0.8;
-    this.shuffle = false;
-    this.repeat = 'off'; // 'off' | 'all' | 'one'
+    this.shuffle = !!settingsService.get('shuffle');
+    this.repeat = settingsService.get('repeat') || 'off'; // 'off' | 'all' | 'one'
 
     // Queue
     this.queue = [];
@@ -39,6 +40,22 @@ class PlayerService {
 
     this.initAudioEvents();
     this.initMediaSession();
+
+    // React to settings changes in real time
+    settingsService.on('change', ({ key, value }) => {
+      if (key === 'shuffle' && this.shuffle !== value) {
+        this.toggleShuffle(false);
+      } else if (key === 'repeat' && this.repeat !== value) {
+        this.setRepeat(value);
+      } else if (key === 'enableMediaSession') {
+        if (value) {
+          this.initMediaSession();
+          if (this.currentTrack) this.updateMediaSessionMetadata(this.currentTrack);
+        } else if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'none';
+        }
+      }
+    });
   }
 
   // --- NATIVE AUDIO ELEMENT INITIALIZATION ---
@@ -421,12 +438,22 @@ class PlayerService {
     if (this.repeat === 'one') {
       this.seek(0);
       this.play();
-    } else {
+    } else if (settingsService.get('autoplay')) {
       this.next();
+    } else {
+      this.pause();
+      this.seek(0);
+      this.updateMediaSessionState();
     }
   }
 
   // --- REPEAT & SHUFFLE MODES ---
+  setRepeat(mode) {
+    this.repeat = mode || 'off';
+    this.emit('modeChange', { shuffle: this.shuffle, repeat: this.repeat });
+    this.persistState().catch(() => {});
+  }
+
   toggleRepeat() {
     // Cycles: off -> all -> one -> off
     if (this.repeat === 'off') {
@@ -438,10 +465,11 @@ class PlayerService {
     }
 
     this.emit('modeChange', { shuffle: this.shuffle, repeat: this.repeat });
+    settingsService.set('repeat', this.repeat);
     this.persistState().catch(() => {});
   }
 
-  toggleShuffle() {
+  toggleShuffle(syncSettings = true) {
     this.shuffle = !this.shuffle;
 
     if (this.shuffle) {
@@ -464,6 +492,9 @@ class PlayerService {
 
     this.emit('modeChange', { shuffle: this.shuffle, repeat: this.repeat });
     this.emit('queueChange', { queue: this.queue, currentIndex: this.currentIndex });
+    if (syncSettings) {
+      settingsService.set('shuffle', this.shuffle);
+    }
     this.persistState().catch(() => {});
   }
 
@@ -543,7 +574,7 @@ class PlayerService {
 
   // --- SYSTEM MEDIA SESSION API ---
   initMediaSession() {
-    if (!('mediaSession' in navigator)) return;
+    if (!('mediaSession' in navigator) || !settingsService.get('enableMediaSession')) return;
 
     const safeSetAction = (action, handler) => {
       try {
@@ -593,7 +624,7 @@ class PlayerService {
   }
 
   updateMediaSessionMetadata(track) {
-    if (!('mediaSession' in navigator) || !track) return;
+    if (!('mediaSession' in navigator) || !track || !settingsService.get('enableMediaSession')) return;
 
     try {
       const artwork = getMediaSessionArtwork(track);
@@ -610,7 +641,7 @@ class PlayerService {
   }
 
   updateMediaSessionState() {
-    if (!('mediaSession' in navigator)) return;
+    if (!('mediaSession' in navigator) || !settingsService.get('enableMediaSession')) return;
     try {
       if (this.isPlaying) {
         navigator.mediaSession.playbackState = 'playing';
@@ -623,7 +654,7 @@ class PlayerService {
   }
 
   updateMediaSessionPosition() {
-    if (!('mediaSession' in navigator) || !('setPositionState' in navigator.mediaSession)) return;
+    if (!('mediaSession' in navigator) || !('setPositionState' in navigator.mediaSession) || !settingsService.get('enableMediaSession')) return;
 
     if (this.duration > 0 && isFinite(this.duration) && isFinite(this.currentTime)) {
       try {
@@ -653,6 +684,11 @@ class PlayerService {
       this.emit('volumeChange', { volume: this.volume, isMuted: this.volume === 0 });
       this.emit('modeChange', { shuffle: this.shuffle, repeat: this.repeat });
 
+      // Respect user setting: rememberLastTrack
+      if (!settingsService.get('rememberLastTrack')) {
+        return;
+      }
+
       // If queue was saved
       if (state.queue && state.queue.length > 0 && allTracks && allTracks.length > 0) {
         const trackMap = new Map(allTracks.map(t => [t.id, t]));
@@ -668,6 +704,17 @@ class PlayerService {
             // Pre-load track without playing
             this.activeObjectUrl = URL.createObjectURL(this.currentTrack.audioBlob);
             this.audio.src = this.activeObjectUrl;
+
+            // Restore position if enabled
+            if (settingsService.get('rememberPlaybackPosition') && typeof state.playbackTime === 'number' && state.playbackTime > 0) {
+              const resumeTime = state.playbackTime;
+              this.audio.addEventListener('loadedmetadata', () => {
+                if (resumeTime < (this.audio.duration || Infinity)) {
+                  this.seek(resumeTime);
+                }
+              }, { once: true });
+            }
+
             this.emit('trackChange', this.currentTrack);
             this.emit('queueChange', { queue: this.queue, currentIndex: this.currentIndex });
             this.updateMediaSessionMetadata(this.currentTrack);
@@ -687,6 +734,7 @@ class PlayerService {
       state.shuffle = this.shuffle;
       state.repeat = this.repeat;
       state.currentTrackId = this.currentTrack ? this.currentTrack.id : null;
+      state.playbackTime = settingsService.get('rememberPlaybackPosition') ? (this.currentTime || 0) : 0;
       state.queue = this.queue.map(t => t.id);
       state.queueIndex = this.currentIndex;
       await saveAppState(state);

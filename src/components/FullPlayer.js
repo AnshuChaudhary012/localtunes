@@ -6,6 +6,7 @@ import { getArtworkSrc, getTrackTheme } from '../utils/artworkGenerator.js';
 import { isFavorite, toggleFavorite } from '../services/musicStorage.js';
 import { AudioVisualizer } from './Visualizer.js';
 import { toast } from './Toast.js';
+import { settingsService } from '../services/settingsService.js';
 
 export class FullPlayer {
   constructor(onOpenQueue) {
@@ -71,6 +72,11 @@ export class FullPlayer {
     const seekPercent = player.duration > 0 ? Math.min(100, Math.max(0, (currentSec / totalSec) * 100)) : 0;
     const currentVol = player.isMuted ? 0 : (typeof player.volume === 'number' ? player.volume : 0.8);
     const volumePercent = Math.min(100, Math.max(0, currentVol * 100));
+    const showRemaining = settingsService.get('showRemainingTime');
+    const remainingTimeSec = Math.max(0, (player.duration || 0) - currentSec);
+    const durationText = showRemaining && isFinite(player.duration) && player.duration > 0
+      ? `-${formatDuration(remainingTimeSec)}`
+      : formatDuration(player.duration);
 
     this.element.innerHTML = `
       <!-- Ambient Dynamic Glowing Backdrop -->
@@ -153,7 +159,7 @@ export class FullPlayer {
           </div>
           <div class="flex items-center justify-between text-xs font-mono text-slate-400">
             <span id="full-current-time">${formatDuration(currentSec)}</span>
-            <span id="full-total-duration">${formatDuration(player.duration)}</span>
+            <button id="full-total-duration" class="hover:text-cyan-400 transition-colors focus:outline-none" title="Toggle elapsed / remaining time">${durationText}</button>
           </div>
         </div>
 
@@ -268,6 +274,14 @@ export class FullPlayer {
       seekSlider.style.setProperty('--progress', `${pct}%`);
     });
 
+    const totalDurBtn = this.element.querySelector('#full-total-duration');
+    if (totalDurBtn) {
+      totalDurBtn.addEventListener('click', () => {
+        const curr = settingsService.get('showRemainingTime');
+        settingsService.set('showRemainingTime', !curr);
+      });
+    }
+
     // Playback buttons
     const playBtn = this.element.querySelector('#full-play-btn');
     playBtn.addEventListener('click', () => player.togglePlay());
@@ -353,7 +367,25 @@ export class FullPlayer {
         seekSlider.style.setProperty('--progress', `${pct}%`);
       }
       if (currTimeLabel) currTimeLabel.textContent = formatDuration(currentTime);
-      if (totalDurLabel && isFinite(duration) && duration > 0) totalDurLabel.textContent = formatDuration(duration);
+      if (totalDurLabel && isFinite(duration) && duration > 0) {
+        const showRemaining = settingsService.get('showRemainingTime');
+        totalDurLabel.textContent = showRemaining
+          ? `-${formatDuration(Math.max(0, duration - currentTime))}`
+          : formatDuration(duration);
+      }
+    });
+
+    settingsService.on('change', ({ key }) => {
+      if (key === 'showRemainingTime' && this.isOpen) {
+        const totalDurLabel = this.element.querySelector('#full-total-duration');
+        if (totalDurLabel && isFinite(player.duration) && player.duration > 0) {
+          const showRemaining = settingsService.get('showRemainingTime');
+          const currentSec = player.currentTime || 0;
+          totalDurLabel.textContent = showRemaining
+            ? `-${formatDuration(Math.max(0, player.duration - currentSec))}`
+            : formatDuration(player.duration);
+        }
+      }
     });
 
     player.on('modeChange', ({ shuffle, repeat }) => {

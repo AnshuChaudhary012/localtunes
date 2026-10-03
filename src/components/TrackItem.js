@@ -38,7 +38,7 @@ export function renderTrackItem(track, options = {}) {
   const artworkSrc = getArtworkSrc(track);
 
   const row = document.createElement('div');
-  row.className = `group flex items-center gap-3 p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
+  row.className = `track-item-row group flex items-center gap-3 p-2.5 rounded-xl transition-all duration-150 cursor-pointer ${
     isCurrent ? 'bg-cyan-500/10 border border-cyan-500/20' : 'hover:bg-white/5 border border-transparent'
   }`;
   row.dataset.trackId = track.id;
@@ -61,7 +61,7 @@ export function renderTrackItem(track, options = {}) {
     </div>
 
     <!-- Artwork Thumbnail -->
-    <div class="relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-dark-surface shadow-sm">
+    <div class="track-thumb-box relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-dark-surface shadow-sm">
       <img src="${artworkSrc}" alt="${escapeHtml(track.title)}" class="w-full h-full object-cover" loading="lazy" />
       ${isCurrent && isPlaying ? `
         <div class="absolute inset-0 bg-black/40 flex items-center justify-center">

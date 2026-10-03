@@ -9,13 +9,13 @@ export default {
     extend: {
       colors: {
         dark: {
-          bg: '#0a0d14',
-          surface: '#111726',
-          card: '#161f33',
-          cardHover: '#1c2740',
-          border: 'rgba(255, 255, 255, 0.08)',
-          muted: '#8e9bb0',
-          subtext: '#64748b'
+          bg: 'rgb(var(--color-bg-primary-rgb) / <alpha-value>)',
+          surface: 'rgb(var(--color-bg-surface-rgb) / <alpha-value>)',
+          card: 'rgb(var(--color-bg-card-rgb) / <alpha-value>)',
+          cardHover: 'rgb(var(--color-bg-card-hover-rgb) / <alpha-value>)',
+          border: 'var(--color-border)',
+          muted: 'var(--color-text-muted)',
+          subtext: 'var(--color-text-subtext)'
         },
         brand: {
           50: '#ecfeff',
@@ -42,7 +42,7 @@ export default {
         ]
       },
       boxShadow: {
-        'glow': '0 0 25px -5px rgba(6, 182, 212, 0.35)',
+        'glow': '0 0 25px -5px var(--color-accent-glow)',
         'glow-purple': '0 0 25px -5px rgba(139, 92, 246, 0.35)',
         'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
       },

@@ -5,10 +5,11 @@ import { icons } from '../utils/icons.js';
 import { getArtworkSrc } from '../utils/artworkGenerator.js';
 import { renderTrackItem } from '../components/TrackItem.js';
 import { formatDuration } from '../utils/formatters.js';
+import { settingsService } from '../services/settingsService.js';
 
 export async function renderLibraryPage(container, { onNavigate, onAddMusic, initialTab = 'songs' }) {
   let activeTab = initialTab; // 'songs' | 'albums' | 'artists'
-  let sortBy = 'dateAdded'; // 'dateAdded' | 'title' | 'artist' | 'duration'
+  let sortBy = settingsService.get('defaultLibrarySort') || 'dateAdded'; // 'dateAdded' | 'title' | 'artist' | 'duration'
   let subView = null; // null | { type: 'album', name: string } | { type: 'artist', name: string }
 
   async function refresh() {
@@ -209,6 +210,7 @@ export async function renderLibraryPage(container, { onNavigate, onAddMusic, ini
     if (sortSelect) {
       sortSelect.addEventListener('change', (e) => {
         sortBy = e.target.value;
+        settingsService.set('defaultLibrarySort', sortBy);
         refresh();
       });
     }

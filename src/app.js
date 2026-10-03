@@ -15,6 +15,7 @@ import { renderLibraryPage } from './pages/LibraryPage.js';
 import { renderFavoritesPage } from './pages/FavoritesPage.js';
 import { renderPlaylistsPage } from './pages/PlaylistsPage.js';
 import { renderSearchPage } from './pages/SearchPage.js';
+import { renderSettingsPage } from './pages/SettingsPage.js';
 
 class App {
   constructor() {
@@ -55,12 +56,15 @@ class App {
     // 4. Setup PWA Service Worker & Install Prompt
     this.setupPwa();
 
-    // 5. Mobile Header Brand & Add Button
+    // 5. Mobile Header Brand, Add & Settings Buttons
     const mobileBrand = document.getElementById('mobile-brand-click');
     if (mobileBrand) mobileBrand.addEventListener('click', () => this.navigate('home'));
 
     const mobileAddBtn = document.getElementById('mobile-add-music-btn');
     if (mobileAddBtn) mobileAddBtn.addEventListener('click', () => this.triggerFilePicker());
+
+    const mobileSettingsBtn = document.getElementById('mobile-settings-btn');
+    if (mobileSettingsBtn) mobileSettingsBtn.addEventListener('click', () => this.navigate('settings'));
 
     // 6. Restore saved state & tracks
     const allTracks = await getAllTracks();
@@ -93,6 +97,11 @@ class App {
     mainContent.scrollTop = 0;
 
     switch (route) {
+      case 'settings':
+        await renderSettingsPage(mainContent, {
+          onNavigate: (r) => this.navigate(r),
+        });
+        break;
       case 'library':
         await renderLibraryPage(mainContent, {
           onNavigate: (r) => this.navigate(r),
