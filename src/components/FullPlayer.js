@@ -119,7 +119,7 @@ export class FullPlayer {
       </main>
 
       <!-- Bottom Controls Area -->
-      <footer class="relative z-10 w-full max-w-lg mx-auto px-6 sm:px-8 pb-8 pt-2 flex flex-col gap-4">
+      <footer class="relative z-10 w-full max-w-lg mx-auto px-6 sm:px-8 pb-2 pt-2 flex flex-col gap-4">
         <!-- Title, Artist & Favorite -->
         <div class="flex items-center justify-between gap-4">
           <div class="min-w-0 flex-1">
