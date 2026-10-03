@@ -80,9 +80,13 @@ export class AudioVisualizer {
         const normalized = val / 255;
         height = Math.max(3, normalized * (this.height - 4));
       } else if (isPlaying) {
-        // Fallback procedural wave if WebAudio node is pending
-        const wave = (Math.sin(time + i * 0.4) + 1) * 0.5;
-        height = Math.max(3, wave * (this.height * 0.5));
+        // High-quality organic spectrum simulation when WebAudio is disabled (e.g., iOS background mode)
+        const wave1 = Math.sin(time * 2.0 + i * 0.45);
+        const wave2 = Math.cos(time * 3.1 + i * 0.25) * 0.6;
+        const wave3 = Math.sin(time * 1.2 - i * 0.15) * 0.4;
+        const combined = Math.max(0.08, (wave1 + wave2 + wave3 + 2.0) / 4.0);
+        const centerEmphasis = 1 - Math.abs((i - this.barCount / 2) / (this.barCount / 2)) * 0.25;
+        height = Math.max(3, combined * centerEmphasis * (this.height - 6));
       }
 
       const x = i * (barWidth + gap);

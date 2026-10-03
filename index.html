@@ -30,6 +30,9 @@
 </head>
 
 <body class="bg-dark-bg text-slate-100 h-full w-full flex overflow-hidden">
+  <!-- Persistent Native HTML5 Audio Element for Resilient iOS / Background Playback -->
+  <audio id="localtunes-audio" preload="auto" playsinline webkit-playsinline x-webkit-airplay="allow" controlslist="nodownload" style="display: none;"></audio>
+
   <!-- Hidden File Input for Audio Import -->
   <input type="file" id="audio-file-input" multiple accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg,.flac" class="hidden" />
 

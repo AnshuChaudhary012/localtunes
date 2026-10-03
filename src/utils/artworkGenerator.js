@@ -89,6 +89,7 @@ function escapeXml(unsafe) {
 
 // Artwork URL Cache to reuse Object URLs and prevent memory leaks
 const artworkUrlCache = new Map();
+const pngArtworkCache = new Map();
 
 export function getArtworkSrc(track) {
   if (!track) return generateArtworkSvg({ title: 'LocalTunes' });
@@ -107,9 +108,113 @@ export function getArtworkSrc(track) {
   return generateArtworkSvg(track);
 }
 
+// Generate genuine raster PNG data URI for iOS lock screen (iOS rejects SVG in MediaSession)
+export function generateArtworkPngDataUrl(track, size = 512) {
+  const cacheKey = (track && track.id) || (track ? `${track.title}_${track.artist}` : 'default');
+  if (pngArtworkCache.has(cacheKey)) {
+    return pngArtworkCache.get(cacheKey);
+  }
+
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    const theme = getTrackTheme(track || {});
+    const initials = getInitials(track?.title || track?.fileName || 'LT');
+
+    // Background fill
+    ctx.fillStyle = theme.bg || '#083344';
+    ctx.fillRect(0, 0, size, size);
+
+    // Primary radial glow
+    const grad1 = ctx.createRadialGradient(size * 0.25, size * 0.3, 10, size * 0.25, size * 0.3, size * 0.45);
+    grad1.addColorStop(0, theme.from || '#06b6d4');
+    grad1.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad1;
+    ctx.fillRect(0, 0, size, size);
+
+    // Secondary radial glow
+    const grad2 = ctx.createRadialGradient(size * 0.8, size * 0.75, 10, size * 0.8, size * 0.75, size * 0.4);
+    grad2.addColorStop(0, theme.to || '#3b82f6');
+    grad2.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad2;
+    ctx.fillRect(0, 0, size, size);
+
+    // Stylized vinyl grooves
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 2;
+    [0.38, 0.30, 0.22].forEach((ratio) => {
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size * ratio, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    // Center circular vinyl badge
+    const centerGrad = ctx.createLinearGradient(0, 0, size, size);
+    centerGrad.addColorStop(0, theme.from || '#06b6d4');
+    centerGrad.addColorStop(1, theme.to || '#3b82f6');
+
+    ctx.fillStyle = 'rgba(10, 13, 20, 0.92)';
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = centerGrad;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Initials in center
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.round(size * 0.09)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(initials, size / 2, size / 2);
+
+    const pngUrl = canvas.toDataURL('image/png');
+    pngArtworkCache.set(cacheKey, pngUrl);
+    return pngUrl;
+  } catch (err) {
+    console.warn('Canvas PNG generation failed:', err);
+    return '';
+  }
+}
+
+// MediaSession artwork array compliant with iOS Lock Screen specifications
+export function getMediaSessionArtwork(track) {
+  const origin = typeof window !== 'undefined' && window.location ? window.location.origin : '';
+  const result = [];
+
+  if (track && track.artworkBlob) {
+    const blobUrl = getArtworkSrc(track);
+    const mime = track.artworkBlob.type || 'image/jpeg';
+    result.push({ src: blobUrl, sizes: '512x512', type: mime });
+  } else {
+    const pngDataUrl = generateArtworkPngDataUrl(track, 512);
+    if (pngDataUrl) {
+      result.push({ src: pngDataUrl, sizes: '512x512', type: 'image/png' });
+    }
+  }
+
+  // Include absolute PNG fallback icons for Apple Lock Screen / Control Center
+  if (origin) {
+    result.push(
+      { src: `${origin}/icons/icon-512.png`, sizes: '512x512', type: 'image/png' },
+      { src: `${origin}/icons/icon-192.png`, sizes: '192x192', type: 'image/png' }
+    );
+  }
+
+  return result;
+}
+
 export function revokeTrackArtwork(trackId) {
   if (artworkUrlCache.has(trackId)) {
     URL.revokeObjectURL(artworkUrlCache.get(trackId));
     artworkUrlCache.delete(trackId);
   }
+  if (pngArtworkCache.has(trackId)) {
+    pngArtworkCache.delete(trackId);
+  }
 }
+

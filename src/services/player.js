@@ -1,11 +1,10 @@
 // LocalTunes Core Audio Player Service
-import { recordTrackPlayed, saveAppState, loadAppState } from './musicStorage.js';
-import { getArtworkSrc } from '../utils/artworkGenerator.js';
+import { recordTrackPlayed, saveAppState, loadAppState, getTrackById } from './musicStorage.js';
+import { getArtworkSrc, getMediaSessionArtwork } from '../utils/artworkGenerator.js';
 
 class PlayerService {
   constructor() {
-    this.audio = new Audio();
-    this.audio.preload = 'auto';
+    this.audio = this.initAudioElement();
 
     // State
     this.currentTrack = null;
@@ -26,17 +25,58 @@ class PlayerService {
     // Object URL Tracking for memory cleanup
     this.activeObjectUrl = null;
 
-    // Web Audio API for Live Visualizer
+    // Web Audio API for Live Visualizer (used on desktop; disabled on iOS to prevent background audio suspension)
     this.audioContext = null;
     this.analyser = null;
     this.audioSourceNode = null;
     this.isAudioContextReady = false;
+
+    // Throttling for MediaSession position state updates
+    this.lastPositionReportTime = 0;
 
     // Event listeners
     this.listeners = new Map();
 
     this.initAudioEvents();
     this.initMediaSession();
+  }
+
+  // --- NATIVE AUDIO ELEMENT INITIALIZATION ---
+  initAudioElement() {
+    // Check for existing DOM element (e.g. from index.html) or create and mount one.
+    // iOS Safari requires the <audio> element to be mounted in the active DOM tree
+    // with inline playback attributes to prevent power-management suspension.
+    let el = document.getElementById('localtunes-audio');
+    if (!el) {
+      el = document.createElement('audio');
+      el.id = 'localtunes-audio';
+      el.style.display = 'none';
+      if (document.body) {
+        document.body.appendChild(el);
+      } else {
+        document.addEventListener('DOMContentLoaded', () => {
+          if (!document.getElementById('localtunes-audio')) {
+            document.body.appendChild(el);
+          }
+        });
+      }
+    }
+
+    el.preload = 'auto';
+    el.setAttribute('playsinline', 'true');
+    el.setAttribute('webkit-playsinline', 'true');
+    el.setAttribute('x-webkit-airplay', 'allow');
+    el.setAttribute('controlslist', 'nodownload');
+
+    return el;
+  }
+
+  isIOSDevice() {
+    if (typeof navigator === 'undefined') return false;
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
   }
 
   // --- PUB / SUB SYSTEM ---
@@ -66,6 +106,7 @@ class PlayerService {
       this.isPlaying = true;
       this.emit('playbackChange', true);
       this.updateMediaSessionState();
+      this.updateMediaSessionPosition();
       this.setupWebAudio();
     });
 
@@ -73,6 +114,7 @@ class PlayerService {
       this.isPlaying = false;
       this.emit('playbackChange', false);
       this.updateMediaSessionState();
+      this.updateMediaSessionPosition();
     });
 
     this.audio.addEventListener('timeupdate', () => {
@@ -86,7 +128,12 @@ class PlayerService {
         percent,
       });
 
-      this.updateMediaSessionPosition();
+      // Throttled update to MediaSession position state (every ~2s or on track restart)
+      // to avoid excessive IPC overhead with iOS lock screen daemon
+      if (Math.abs(this.currentTime - this.lastPositionReportTime) >= 2) {
+        this.lastPositionReportTime = this.currentTime;
+        this.updateMediaSessionPosition();
+      }
     });
 
     this.audio.addEventListener('loadedmetadata', () => {
@@ -97,6 +144,7 @@ class PlayerService {
           duration: this.duration,
           percent: 0,
         });
+        this.updateMediaSessionPosition();
       }
     });
 
@@ -111,6 +159,7 @@ class PlayerService {
       this.emit('error', msg);
       this.isPlaying = false;
       this.emit('playbackChange', false);
+      this.updateMediaSessionState();
     });
 
     // Load saved volume
@@ -129,6 +178,17 @@ class PlayerService {
 
   // Web Audio Analyser setup
   setupWebAudio() {
+    // CRITICAL iOS Background Playback Fix:
+    // On iOS Safari / WebKit, connecting an HTML5 <audio> element to an AudioContext
+    // via createMediaElementSource() reroutes the audio pipeline into Web Audio.
+    // iOS aggressively suspends all AudioContext instances when the screen locks,
+    // the phone idles, or the browser enters the background, which abruptly stops
+    // music playback.
+    // Therefore, on iOS, the <audio> element MUST remain purely on the native AVPlayer hardware path.
+    if (this.isIOSDevice()) {
+      return;
+    }
+
     if (this.isAudioContextReady) return;
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -145,8 +205,7 @@ class PlayerService {
 
       this.isAudioContextReady = true;
     } catch (e) {
-      // Browsers may block if not user triggered, or if already connected
-      // It will gracefully fall back
+      // Gracefully fall back if Web Audio cannot be initialized
     }
   }
 
@@ -181,7 +240,7 @@ class PlayerService {
     });
 
     await this.loadTrackAtIndex(this.currentIndex, autoPlay);
-    this.persistState();
+    this.persistState().catch(() => {});
   }
 
   async playTrack(track, queueContext = null) {
@@ -211,10 +270,16 @@ class PlayerService {
     const track = this.queue[this.currentIndex];
     this.currentTrack = track;
 
-    // Revoke previous object URL to avoid memory leaks
-    if (this.activeObjectUrl) {
-      URL.revokeObjectURL(this.activeObjectUrl);
-      this.activeObjectUrl = null;
+    // Fallback: If audioBlob was somehow stripped from memory, attempt retrieval from IndexedDB
+    if (!track.audioBlob && track.id) {
+      try {
+        const dbTrack = await getTrackById(track.id);
+        if (dbTrack && dbTrack.audioBlob) {
+          track.audioBlob = dbTrack.audioBlob;
+        }
+      } catch (e) {
+        console.warn('Fallback track load failed:', e);
+      }
     }
 
     if (!track.audioBlob) {
@@ -223,21 +288,34 @@ class PlayerService {
     }
 
     try {
+      const oldObjectUrl = this.activeObjectUrl;
       this.activeObjectUrl = URL.createObjectURL(track.audioBlob);
       this.audio.src = this.activeObjectUrl;
-      this.audio.load();
 
+      // Safely revoke previous Object URL after handing off to avoid memory leaks
+      // without interrupting the audio decoder
+      if (oldObjectUrl) {
+        setTimeout(() => {
+          try {
+            URL.revokeObjectURL(oldObjectUrl);
+          } catch (e) {}
+        }, 2000);
+      }
+
+      this.lastPositionReportTime = 0;
       this.emit('trackChange', track);
       this.emit('queueChange', { queue: this.queue, currentIndex: this.currentIndex });
       this.updateMediaSessionMetadata(track);
+      this.updateMediaSessionState();
 
       if (autoPlay) {
-        await this.play();
+        // Synchronously trigger play() so iOS event handlers keep active audio session
+        this.play();
       }
 
-      // Record play count and last played in DB
-      recordTrackPlayed(track.id);
-      this.persistState();
+      // Record play count and last played in DB asynchronously (never block audio initiation)
+      recordTrackPlayed(track.id).catch((e) => console.warn('Record play error:', e));
+      this.persistState().catch((e) => console.warn('Persist state error:', e));
     } catch (err) {
       console.error('Error loading track:', err);
       this.emit('error', 'Unable to play this track');
@@ -250,19 +328,26 @@ class PlayerService {
       return;
     }
 
+    if (this.currentTrack && !this.audio.src) {
+      await this.loadTrackAtIndex(this.currentIndex, true);
+      return;
+    }
+
+    // On desktop, non-blocking resume of audioContext if suspended
     if (this.audioContext && this.audioContext.state === 'suspended') {
-      try {
-        await this.audioContext.resume();
-      } catch (e) {}
+      this.audioContext.resume().catch(() => {});
     }
 
     try {
-      await this.audio.play();
+      const playPromise = this.audio.play();
+      if (playPromise !== undefined) {
+        await playPromise;
+      }
     } catch (err) {
-      // Autoplay policy or abort
       console.warn('Playback play request was prevented:', err);
       this.isPlaying = false;
       this.emit('playbackChange', false);
+      this.updateMediaSessionState();
     }
   }
 
@@ -283,6 +368,8 @@ class PlayerService {
     const target = Math.min(seconds, this.duration || 0);
     this.audio.currentTime = target;
     this.currentTime = target;
+    this.lastPositionReportTime = target;
+    this.updateMediaSessionPosition();
   }
 
   seekPercent(percent) {
@@ -305,6 +392,7 @@ class PlayerService {
         // Stop playback
         this.pause();
         this.seek(0);
+        this.updateMediaSessionState();
       }
     }
   }
@@ -350,7 +438,7 @@ class PlayerService {
     }
 
     this.emit('modeChange', { shuffle: this.shuffle, repeat: this.repeat });
-    this.persistState();
+    this.persistState().catch(() => {});
   }
 
   toggleShuffle() {
@@ -376,7 +464,7 @@ class PlayerService {
 
     this.emit('modeChange', { shuffle: this.shuffle, repeat: this.repeat });
     this.emit('queueChange', { queue: this.queue, currentIndex: this.currentIndex });
-    this.persistState();
+    this.persistState().catch(() => {});
   }
 
   shuffleArray(arr) {
@@ -395,7 +483,7 @@ class PlayerService {
     this.isMuted = clamped === 0;
 
     this.emit('volumeChange', { volume: this.volume, isMuted: this.isMuted });
-    this.persistState();
+    this.persistState().catch(() => {});
   }
 
   toggleMute() {
@@ -421,6 +509,7 @@ class PlayerService {
         this.currentTrack = null;
         this.pause();
         this.audio.src = '';
+        this.updateMediaSessionState();
       } else {
         this.next();
         this.queue.splice(index, 1);
@@ -438,11 +527,16 @@ class PlayerService {
 
   clearQueue() {
     this.pause();
+    if (this.activeObjectUrl) {
+      URL.revokeObjectURL(this.activeObjectUrl);
+      this.activeObjectUrl = null;
+    }
     this.queue = [];
     this.unshuffledQueue = [];
     this.currentIndex = -1;
     this.currentTrack = null;
     this.audio.src = '';
+    this.updateMediaSessionState();
     this.emit('queueChange', { queue: [], currentIndex: -1 });
     this.emit('trackChange', null);
   }
@@ -451,61 +545,96 @@ class PlayerService {
   initMediaSession() {
     if (!('mediaSession' in navigator)) return;
 
-    navigator.mediaSession.setActionHandler('play', () => this.play());
-    navigator.mediaSession.setActionHandler('pause', () => this.pause());
-    navigator.mediaSession.setActionHandler('previoustrack', () => this.previous());
-    navigator.mediaSession.setActionHandler('nexttrack', () => this.next());
-    navigator.mediaSession.setActionHandler('seekto', (details) => {
-      if (details.seekTime !== undefined) {
+    const safeSetAction = (action, handler) => {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch (err) {
+        console.warn(`MediaSession action "${action}" not supported:`, err);
+      }
+    };
+
+    safeSetAction('play', () => {
+      this.play();
+    });
+
+    safeSetAction('pause', () => {
+      this.pause();
+    });
+
+    safeSetAction('previoustrack', () => {
+      this.previous();
+    });
+
+    safeSetAction('nexttrack', () => {
+      this.next();
+    });
+
+    safeSetAction('seekbackward', (details) => {
+      const skipTime = details.seekOffset || 10;
+      this.seek(Math.max(0, this.currentTime - skipTime));
+    });
+
+    safeSetAction('seekforward', (details) => {
+      const skipTime = details.seekOffset || 10;
+      this.seek(Math.min(this.duration || Infinity, this.currentTime + skipTime));
+    });
+
+    safeSetAction('seekto', (details) => {
+      if (details.seekTime !== undefined && isFinite(details.seekTime)) {
         this.seek(details.seekTime);
       }
     });
-    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-      this.seek(this.currentTime - (details.seekOffset || 10));
-    });
-    navigator.mediaSession.setActionHandler('seekforward', (details) => {
-      this.seek(this.currentTime + (details.seekOffset || 10));
-    });
-    navigator.mediaSession.setActionHandler('stop', () => {
+
+    safeSetAction('stop', () => {
       this.pause();
       this.seek(0);
+      this.updateMediaSessionState();
     });
   }
 
   updateMediaSessionMetadata(track) {
     if (!('mediaSession' in navigator) || !track) return;
 
-    const artworkSrc = getArtworkSrc(track);
+    try {
+      const artwork = getMediaSessionArtwork(track);
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: track.title || 'Unknown Title',
-      artist: track.artist || 'Unknown Artist',
-      album: track.album || 'LocalTunes',
-      artwork: [
-        { src: artworkSrc, sizes: '192x192', type: 'image/png' },
-        { src: artworkSrc, sizes: '512x512', type: 'image/png' },
-      ],
-    });
-  }
-
-  updateMediaSessionState() {
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = this.isPlaying ? 'playing' : 'paused';
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title || track.fileName || 'Unknown Title',
+        artist: track.artist || 'Unknown Artist',
+        album: track.album || 'LocalTunes',
+        artwork,
+      });
+    } catch (err) {
+      console.warn('Failed to update MediaMetadata:', err);
     }
   }
 
+  updateMediaSessionState() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      if (this.isPlaying) {
+        navigator.mediaSession.playbackState = 'playing';
+      } else if (this.currentTrack) {
+        navigator.mediaSession.playbackState = 'paused';
+      } else {
+        navigator.mediaSession.playbackState = 'none';
+      }
+    } catch (e) {}
+  }
+
   updateMediaSessionPosition() {
-    if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
-      if (this.duration > 0 && isFinite(this.duration) && isFinite(this.currentTime)) {
-        try {
-          navigator.mediaSession.setPositionState({
-            duration: this.duration,
-            playbackRate: this.audio.playbackRate || 1,
-            position: Math.min(this.currentTime, this.duration),
-          });
-        } catch (e) {
-          // Ignore transient position state sync errors
-        }
+    if (!('mediaSession' in navigator) || !('setPositionState' in navigator.mediaSession)) return;
+
+    if (this.duration > 0 && isFinite(this.duration) && isFinite(this.currentTime)) {
+      try {
+        const pos = Math.min(Math.max(0, this.currentTime), this.duration);
+        navigator.mediaSession.setPositionState({
+          duration: this.duration,
+          playbackRate: this.audio.playbackRate || 1,
+          position: pos,
+        });
+      } catch (e) {
+        // Ignore transient position state sync errors
       }
     }
   }
@@ -535,13 +664,14 @@ class PlayerService {
           this.currentIndex = Math.max(0, Math.min(state.queueIndex || 0, this.queue.length - 1));
           this.currentTrack = this.queue[this.currentIndex];
 
-          if (this.currentTrack) {
+          if (this.currentTrack && this.currentTrack.audioBlob) {
             // Pre-load track without playing
             this.activeObjectUrl = URL.createObjectURL(this.currentTrack.audioBlob);
             this.audio.src = this.activeObjectUrl;
             this.emit('trackChange', this.currentTrack);
             this.emit('queueChange', { queue: this.queue, currentIndex: this.currentIndex });
             this.updateMediaSessionMetadata(this.currentTrack);
+            this.updateMediaSessionState();
           }
         }
       }
