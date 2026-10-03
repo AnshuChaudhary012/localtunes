@@ -62,16 +62,24 @@ input[type=range].slider-progress {
   background: transparent;
   cursor: pointer;
   height: 20px;
+  width: 100%;
 }
 
 input[type=range].slider-progress:focus {
   outline: none;
 }
 
+/* WebKit Track */
 input[type=range].slider-progress::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(
+    to right,
+    #06b6d4 0%,
+    #22d3ee var(--progress, 0%),
+    rgba(255, 255, 255, 0.18) var(--progress, 0%),
+    rgba(255, 255, 255, 0.18) 100%
+  );
   transition: height 0.15s ease;
 }
 
@@ -79,6 +87,7 @@ input[type=range].slider-progress:hover::-webkit-slider-runnable-track {
   height: 6px;
 }
 
+/* WebKit Thumb - Always visible with glowing cyan accent */
 input[type=range].slider-progress::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -86,17 +95,66 @@ input[type=range].slider-progress::-webkit-slider-thumb {
   width: 14px;
   border-radius: 50%;
   background: #22d3ee;
-  box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.8), 0 1px 3px rgba(0, 0, 0, 0.5);
   margin-top: -5px;
-  opacity: 0;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  opacity: 1;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, margin-top 0.15s ease;
 }
 
-.group:hover input[type=range].slider-progress::-webkit-slider-thumb,
+input[type=range].slider-progress:hover::-webkit-slider-thumb {
+  margin-top: -4px;
+  transform: scale(1.2);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 1), 0 2px 5px rgba(0, 0, 0, 0.6);
+}
+
 input[type=range].slider-progress:active::-webkit-slider-thumb,
 input[type=range].slider-progress:focus::-webkit-slider-thumb {
+  margin-top: -4px;
+  transform: scale(1.25);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 1), 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+/* Firefox Track & Progress */
+input[type=range].slider-progress::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: height 0.15s ease;
+}
+
+input[type=range].slider-progress::-moz-range-progress {
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #06b6d4, #22d3ee);
+  transition: height 0.15s ease;
+}
+
+input[type=range].slider-progress:hover::-moz-range-track,
+input[type=range].slider-progress:hover::-moz-range-progress {
+  height: 6px;
+}
+
+/* Firefox Thumb */
+input[type=range].slider-progress::-moz-range-thumb {
+  border: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: #22d3ee;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.8), 0 1px 3px rgba(0, 0, 0, 0.5);
   opacity: 1;
-  transform: scale(1.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type=range].slider-progress:hover::-moz-range-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 1), 0 2px 5px rgba(0, 0, 0, 0.6);
+}
+
+input[type=range].slider-progress:active::-moz-range-thumb,
+input[type=range].slider-progress:focus::-moz-range-thumb {
+  transform: scale(1.25);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 1), 0 2px 6px rgba(0, 0, 0, 0.7);
 }
 
 /* Glassmorphism Classes */

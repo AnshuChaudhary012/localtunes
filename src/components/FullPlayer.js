@@ -66,6 +66,12 @@ export class FullPlayer {
     const artworkSrc = getArtworkSrc(track);
     const isPlaying = player.isPlaying;
 
+    const currentSec = player.currentTime || 0;
+    const totalSec = isFinite(player.duration) && player.duration > 0 ? player.duration : 100;
+    const seekPercent = player.duration > 0 ? Math.min(100, Math.max(0, (currentSec / totalSec) * 100)) : 0;
+    const currentVol = player.isMuted ? 0 : (typeof player.volume === 'number' ? player.volume : 0.8);
+    const volumePercent = Math.min(100, Math.max(0, currentVol * 100));
+
     this.element.innerHTML = `
       <!-- Ambient Dynamic Glowing Backdrop -->
       <div class="absolute inset-0 pointer-events-none overflow-hidden opacity-40">
@@ -137,15 +143,16 @@ export class FullPlayer {
               type="range"
               id="full-seek-slider"
               min="0"
-              max="${player.duration || 100}"
-              value="${player.currentTime || 0}"
+              max="${totalSec}"
+              value="${currentSec}"
               step="0.1"
+              style="--progress: ${seekPercent}%;"
               class="w-full slider-progress cursor-pointer"
               aria-label="Seek track"
             />
           </div>
           <div class="flex items-center justify-between text-xs font-mono text-slate-400">
-            <span id="full-current-time">${formatDuration(player.currentTime)}</span>
+            <span id="full-current-time">${formatDuration(currentSec)}</span>
             <span id="full-total-duration">${formatDuration(player.duration)}</span>
           </div>
         </div>
@@ -191,7 +198,8 @@ export class FullPlayer {
               min="0"
               max="1"
               step="0.01"
-              value="${player.isMuted ? 0 : player.volume}"
+              value="${currentVol}"
+              style="--progress: ${volumePercent}%;"
               class="w-full slider-progress cursor-pointer"
               aria-label="Volume slider"
             />
@@ -246,12 +254,18 @@ export class FullPlayer {
       this.isScrubbing = true;
       const targetSec = parseFloat(e.target.value);
       currTimeLabel.textContent = formatDuration(targetSec);
+      const max = parseFloat(seekSlider.max) || 100;
+      const pct = max > 0 ? Math.min(100, Math.max(0, (targetSec / max) * 100)) : 0;
+      seekSlider.style.setProperty('--progress', `${pct}%`);
     });
 
     seekSlider.addEventListener('change', (e) => {
       const targetSec = parseFloat(e.target.value);
       player.seek(targetSec);
       this.isScrubbing = false;
+      const max = parseFloat(seekSlider.max) || 100;
+      const pct = max > 0 ? Math.min(100, Math.max(0, (targetSec / max) * 100)) : 0;
+      seekSlider.style.setProperty('--progress', `${pct}%`);
     });
 
     // Playback buttons
@@ -276,13 +290,16 @@ export class FullPlayer {
 
     volumeBtn.addEventListener('click', () => {
       player.toggleMute();
-      volumeSlider.value = player.isMuted ? 0 : player.volume;
+      const val = player.isMuted ? 0 : player.volume;
+      volumeSlider.value = val;
+      volumeSlider.style.setProperty('--progress', `${val * 100}%`);
       volumeBtn.innerHTML = player.isMuted || player.volume === 0 ? icons.volumeMute('w-5 h-5') : icons.volume('w-5 h-5');
     });
 
     volumeSlider.addEventListener('input', (e) => {
       const vol = parseFloat(e.target.value);
       player.setVolume(vol);
+      volumeSlider.style.setProperty('--progress', `${vol * 100}%`);
       volumeBtn.innerHTML = vol === 0 ? icons.volumeMute('w-5 h-5') : icons.volume('w-5 h-5');
     });
 
@@ -322,7 +339,7 @@ export class FullPlayer {
       }
     });
 
-    player.on('timeUpdate', ({ currentTime, duration }) => {
+    player.on('timeUpdate', ({ currentTime, duration, percent }) => {
       if (!this.isOpen || this.isScrubbing) return;
 
       const seekSlider = this.element.querySelector('#full-seek-slider');
@@ -332,6 +349,8 @@ export class FullPlayer {
       if (seekSlider && isFinite(duration) && duration > 0) {
         seekSlider.max = duration;
         seekSlider.value = currentTime;
+        const pct = typeof percent === 'number' ? percent : (currentTime / duration) * 100;
+        seekSlider.style.setProperty('--progress', `${pct}%`);
       }
       if (currTimeLabel) currTimeLabel.textContent = formatDuration(currentTime);
       if (totalDurLabel && isFinite(duration) && duration > 0) totalDurLabel.textContent = formatDuration(duration);
@@ -362,7 +381,11 @@ export class FullPlayer {
     player.on('volumeChange', ({ volume, isMuted }) => {
       const volumeBtn = this.element.querySelector('#full-volume-btn');
       const volumeSlider = this.element.querySelector('#full-volume-slider');
-      if (volumeSlider) volumeSlider.value = isMuted ? 0 : volume;
+      const val = isMuted ? 0 : volume;
+      if (volumeSlider) {
+        volumeSlider.value = val;
+        volumeSlider.style.setProperty('--progress', `${val * 100}%`);
+      }
       if (volumeBtn) {
         volumeBtn.innerHTML = isMuted || volume === 0 ? icons.volumeMute('w-5 h-5') : icons.volume('w-5 h-5');
       }
