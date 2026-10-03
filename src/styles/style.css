@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+html, body {
+  background-color: #0a0d14;
+  color: #f1f5f9;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Safe area padding utilities */
+.pt-safe {
+  padding-top: var(--sat);
+}
+.pb-safe {
+  padding-bottom: var(--sab);
+}
+.pl-safe {
+  padding-left: var(--sal);
+}
+.pr-safe {
+  padding-right: var(--sar);
+}
+
+.bottom-safe {
+  bottom: var(--sab);
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Interactive range inputs (Seeker & Volume) */
+input[type=range].slider-progress {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 20px;
+}
+
+input[type=range].slider-progress:focus {
+  outline: none;
+}
+
+input[type=range].slider-progress::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  transition: height 0.15s ease;
+}
+
+input[type=range].slider-progress:hover::-webkit-slider-runnable-track {
+  height: 6px;
+}
+
+input[type=range].slider-progress::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: #22d3ee;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+  margin-top: -5px;
+  opacity: 0;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.group:hover input[type=range].slider-progress::-webkit-slider-thumb,
+input[type=range].slider-progress:active::-webkit-slider-thumb,
+input[type=range].slider-progress:focus::-webkit-slider-thumb {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(17, 23, 38, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-dropdown {
+  background: rgba(15, 21, 35, 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Animations */
+@keyframes pulseWave {
+  0%, 100% { height: 4px; }
+  50% { height: 18px; }
+}
+
+.bar-1 { animation: pulseWave 0.8s ease-in-out infinite; }
+.bar-2 { animation: pulseWave 0.6s ease-in-out infinite 0.2s; }
+.bar-3 { animation: pulseWave 0.9s ease-in-out infinite 0.4s; }
+.bar-4 { animation: pulseWave 0.7s ease-in-out infinite 0.1s; }
+
+/* Subtle Ambient Glow */
+.ambient-glow {
+  position: absolute;
+  filter: blur(80px);
+  opacity: 0.35;
+  pointer-events: none;
+  border-radius: 50%;
+  z-index: 0;
+}

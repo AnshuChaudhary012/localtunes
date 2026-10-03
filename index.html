@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#0a0d14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LocalTunes" />
+  <meta name="description" content="Production-quality offline web music player with zero backend, local IndexedDB storage, and rich audio controls." />
+
+  <title>LocalTunes - Offline Web Music Player</title>
+
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/src/styles/style.css" />
+</head>
+<body class="bg-dark-bg text-slate-100 h-full w-full flex overflow-hidden">
+  <!-- Hidden File Input for Audio Import -->
+  <input
+    type="file"
+    id="audio-file-input"
+    multiple
+    accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg,.flac"
+    class="hidden"
+  />
+
+  <!-- Drag & Drop Fullscreen Overlay -->
+  <div id="drag-drop-overlay" class="fixed inset-0 z-50 bg-cyan-950/85 backdrop-blur-md flex flex-col items-center justify-center p-8 border-4 border-dashed border-cyan-400 opacity-0 pointer-events-none transition-opacity duration-200">
+    <div class="w-20 h-20 rounded-3xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shadow-glow mb-4 animate-bounce">
+      <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+      </svg>
+    </div>
+    <h3 class="text-2xl font-bold text-white mb-1">Drop audio files to import</h3>
+    <p class="text-sm text-cyan-200">Files will be saved directly into your browser's offline storage</p>
+  </div>
+
+  <!-- Main App Layout -->
+  <div class="flex h-full w-full overflow-hidden">
+    <!-- Desktop Sidebar (Hidden on mobile) -->
+    <aside id="desktop-sidebar" class="hidden md:flex flex-col w-64 lg:w-72 bg-dark-surface/80 border-r border-dark-border backdrop-blur-xl flex-shrink-0 z-20"></aside>
+
+    <!-- Main Page Content Column -->
+    <div class="flex-1 flex flex-col h-full min-w-0 relative">
+      <!-- Top Mobile Header (Hidden on desktop) -->
+      <header class="md:hidden flex items-center justify-between px-4 py-3 bg-dark-surface/90 border-b border-dark-border backdrop-blur-md z-20 pt-safe">
+        <div class="flex items-center gap-2.5" id="mobile-brand-click">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center shadow-glow">
+            <img src="/icons/icon.svg" class="w-5 h-5" alt="Logo" />
+          </div>
+          <span class="font-extrabold text-base text-white tracking-tight">LocalTunes</span>
+        </div>
+
+        <button id="mobile-add-music-btn" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium text-xs shadow-glow flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Add</span>
+        </button>
+      </header>
+
+      <!-- Scrollable Main Content Container -->
+      <main id="app-main-content" class="flex-1 overflow-y-auto px-4 sm:px-8 py-6 max-w-7xl w-full mx-auto"></main>
+
+      <!-- Bottom Audio Players Container -->
+      <div id="player-container" class="relative z-30 flex-shrink-0">
+        <!-- MiniPlayer is rendered here -->
+      </div>
+
+      <!-- Mobile Bottom Navigation (Hidden on desktop) -->
+      <nav id="mobile-bottom-nav" class="md:hidden bg-dark-surface/95 border-t border-dark-border backdrop-blur-xl z-20 pb-safe"></nav>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
