@@ -43,3 +43,5 @@ Thumbs.db
 *.m4a
 *.aac
 *.ogg
+
+.vercel
